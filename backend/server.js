@@ -14,8 +14,29 @@ connectDB();
 
 const app = express();
 
+// --- CORS Configuration ---
+const allowedOrigins = [
+  "https://arah-infotech-technology.netlify.app", // Your Production Frontend
+  "http://localhost:5173", // Local Vite
+  "http://localhost:8080"  // Your current Local port
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true // Allows headers like Authorization to work correctly
+}));
+
 // Middleware
-app.use(cors());
 app.use(express.json()); // Parses JSON body
 
 // Routes
