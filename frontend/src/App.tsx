@@ -1,8 +1,9 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
 // Public Pages
@@ -23,13 +24,29 @@ import AdminLogin from "./pages/admin/Login";
 import AdminLayout from "./components/admin/AdminLayout";
 import DashboardHome from "./pages/admin/DashboardHome";
 import Messages from "./pages/admin/Messages";
-import CareersAdmin from "./pages/admin/CareersAdmin"; // Make sure file exists now
+import CareersAdmin from "./pages/admin/CareersAdmin"; 
+// Import the new Applications page
+import CareersApplications from "./pages/admin/CareersApplications"; 
+// Import the new Products Admin page
+import ProductsAdmin from "./pages/admin/ProductsAdmin";
 
 const queryClient = new QueryClient();
 
+// --- Components ---
+
+// ScrollToTop Component: Ensures page starts at top when navigating
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+};
+
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  // CHANGED: Use sessionStorage
   const token = sessionStorage.getItem("adminToken");
   
   if (!token) {
@@ -48,6 +65,9 @@ const App = () => {
           <Sonner />
           
           <BrowserRouter>
+            {/* Add ScrollToTop here inside BrowserRouter */}
+            <ScrollToTop />
+            
             <Routes>
               {/* --- Public Routes --- */}
               <Route path="/" element={<Index />} />
@@ -73,10 +93,17 @@ const App = () => {
                   </ProtectedRoute>
                 }
               >
+                {/* Default redirect to dashboard */}
                 <Route index element={<Navigate to="dashboard" replace />} />
+                
+                {/* Admin Sub-routes */}
                 <Route path="dashboard" element={<DashboardHome />} />
                 <Route path="messages" element={<Messages />} />
                 <Route path="careers" element={<CareersAdmin />} />
+                <Route path="careersApplications" element={<CareersApplications />} />
+                
+                {/* NEW ROUTE: Products Management */}
+                <Route path="products" element={<ProductsAdmin />} />
               </Route>
 
               {/* --- 404 --- */}

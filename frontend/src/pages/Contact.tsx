@@ -1,8 +1,7 @@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import PageHero from '@/components/PageHero';
-import { motion } from 'framer-motion';
-import { useInView } from 'framer-motion';
+import { motion, useInView } from 'framer-motion';
 import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,12 +12,12 @@ import {
   MapPin, 
   Clock, 
   Send,
-  MessageSquare,
-  Calendar,
-  CheckCircle
+  CheckCircle,
+  Loader2
 } from 'lucide-react';
 import contactHero from '@/assets/contact-hero.jpg';
 
+// Fixed typos in address and standardized structure
 const contactInfo = [
   {
     icon: Mail,
@@ -28,36 +27,147 @@ const contactInfo = [
   },
   {
     icon: Phone,
-    title: 'Call Us',
+    title: 'Call Us (Primary)',
     content: '+91 89198 01095',
+    link: 'tel:+918919801095',
   },
   {
     icon: Phone,
-    title: 'Call Us',
+    title: 'Call Us (Support)',
     content: '+91 63042 44117',
+    link: 'tel:+916304244117',
   },
   {
     icon: MapPin,
     title: 'Visit Us',
-    content: 'Groud Floor, 83, Shamukh Emmpire, Ayyappa Society, Madhapur, Hyderabad, Telangana 500081',
+    content: 'Ground Floor, 83, Shamukh Empire, Ayyappa Society, Madhapur, Hyderabad, Telangana 500081',
+    link: 'https://maps.google.com', // Optional link
   },
   {
     icon: Clock,
     title: 'Working Hours',
     content: 'Mon - Fri: 10AM - 7PM IST',
+    link: null,
   },
 ];
+
+interface FormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  service: string;
+  message: string;
+}
+
+interface FormErrors {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  service?: string;
+  message?: string;
+}
 
 const Contact = () => {
   const formRef = useRef(null);
   const isFormInView = useInView(formRef, { once: true, margin: '-100px' });
+  
+  // State for Form Data
+  const [formData, setFormData] = useState<FormData>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    service: '',
+    message: ''
+  });
+
+  // State for Errors and Submission Status
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Handle Input Changes
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear error for this field when user starts typing
+    if (errors[name as keyof FormErrors]) {
+      setErrors(prev => ({ ...prev, [name]: undefined }));
+    }
+  };
+
+  // Validation Logic
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+    const nameRegex = /^[a-zA-Z\s]+$/; // Only letters and spaces
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^\+?[0-9\s-()]{10,}$/; // Min 10 chars, allows +, -, space, ()
+
+    // First Name Validation
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    } else if (!nameRegex.test(formData.firstName)) {
+      newErrors.firstName = 'First name should only contain letters';
+    } else if (formData.firstName.length < 2) {
+      newErrors.firstName = 'First name must be at least 2 characters';
+    }
+
+    // Last Name Validation
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
+    } else if (!nameRegex.test(formData.lastName)) {
+      newErrors.lastName = 'Last name should only contain letters';
+    }
+
+    // Email Validation
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email address is required';
+    } else if (!emailRegex.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    // Phone Validation
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    } else if (!phoneRegex.test(formData.phone)) {
+      newErrors.phone = 'Please enter a valid phone number (min 10 digits)';
+    }
+
+    // Service Validation
+    if (!formData.service) {
+      newErrors.service = 'Please select a service';
+    }
+
+    // Message Validation
+    if (!formData.message.trim()) {
+      newErrors.message = 'Message is required';
+    } else if (formData.message.length < 10) {
+      newErrors.message = 'Message must be at least 10 characters';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate form submission
-    setIsSubmitted(true);
-    setTimeout(() => setIsSubmitted(false), 3000);
+    
+    if (validateForm()) {
+      setIsSubmitting(true);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      console.log('Form Submitted:', formData);
+      setIsSubmitting(false);
+      setIsSubmitted(true);
+      
+      // Reset form after 5 seconds or keep the success message
+      // setTimeout(() => setIsSubmitted(false), 5000); 
+    }
   };
 
   return (
@@ -93,52 +203,99 @@ const Contact = () => {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="p-8 rounded-2xl bg-primary/10 text-center"
+                    className="p-8 rounded-2xl bg-primary/10 text-center border border-primary/20"
                   >
                     <CheckCircle className="w-16 h-16 text-primary mx-auto mb-4" />
                     <h3 className="text-xl font-display font-bold text-foreground mb-2">
-                      Message Sent!
+                      Message Sent Successfully!
                     </h3>
                     <p className="text-muted-foreground">
-                      Thank you for reaching out. We'll get back to you soon.
+                      Thank you for reaching out, {formData.firstName}. We will review your message and get back to you shortly.
                     </p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-6"
+                      onClick={() => {
+                        setIsSubmitted(false);
+                        setFormData({
+                          firstName: '', lastName: '', email: '', phone: '', service: '', message: ''
+                        });
+                      }}
+                    >
+                      Send Another Message
+                    </Button>
                   </motion.div>
                 ) : (
-                  <form onSubmit={handleSubmit} className="space-y-6">
+                  <form onSubmit={handleSubmit} className="space-y-6" noValidate>
                     <div className="grid md:grid-cols-2 gap-6">
                       <div>
                         <label className="block text-sm font-medium text-foreground mb-2">
-                          First Name
+                          First Name <span className="text-red-500">*</span>
                         </label>
-                        <Input placeholder="John" required />
+                        <Input 
+                          name="firstName"
+                          value={formData.firstName}
+                          onChange={handleChange}
+                          placeholder="John" 
+                          className={errors.firstName ? "border-red-500 focus-visible:ring-red-500" : ""}
+                        />
+                        {errors.firstName && <span className="text-xs text-red-500 mt-1 block">{errors.firstName}</span>}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-foreground mb-2">
-                          Last Name
+                          Last Name <span className="text-red-500">*</span>
                         </label>
-                        <Input placeholder="Doe" required />
+                        <Input 
+                          name="lastName"
+                          value={formData.lastName}
+                          onChange={handleChange}
+                          placeholder="Doe" 
+                          className={errors.lastName ? "border-red-500 focus-visible:ring-red-500" : ""}
+                        />
+                        {errors.lastName && <span className="text-xs text-red-500 mt-1 block">{errors.lastName}</span>}
                       </div>
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
-                        Email Address
+                        Email Address <span className="text-red-500">*</span>
                       </label>
-                      <Input type="email" placeholder="john@example.com" required />
+                      <Input 
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="john@example.com" 
+                        className={errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}
+                      />
+                      {errors.email && <span className="text-xs text-red-500 mt-1 block">{errors.email}</span>}
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
-                        Phone Number
+                        Phone Number <span className="text-red-500">*</span>
                       </label>
-                      <Input type="tel" placeholder="+1 (234) 567-890" />
+                      <Input 
+                        name="phone"
+                        type="tel"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        placeholder="+91 98765 43210" 
+                        className={errors.phone ? "border-red-500 focus-visible:ring-red-500" : ""}
+                      />
+                      {errors.phone && <span className="text-xs text-red-500 mt-1 block">{errors.phone}</span>}
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
-                        Service Interested In
+                        Service Interested In <span className="text-red-500">*</span>
                       </label>
-                      <select className="w-full h-11 px-4 rounded-lg border border-input bg-background text-foreground">
+                      <select 
+                        name="service"
+                        value={formData.service}
+                        onChange={handleChange}
+                        className={`w-full h-11 px-4 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${errors.service ? "border-red-500 focus:ring-red-500" : "border-input"}`}
+                      >
                         <option value="">Select a service</option>
                         <option value="website">Website Design</option>
                         <option value="marketing">Digital Marketing</option>
@@ -146,27 +303,42 @@ const Contact = () => {
                         <option value="branding">Branding</option>
                         <option value="other">Other</option>
                       </select>
+                      {errors.service && <span className="text-xs text-red-500 mt-1 block">{errors.service}</span>}
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
-                        Your Message
+                        Your Message <span className="text-red-500">*</span>
                       </label>
                       <Textarea 
+                        name="message"
+                        value={formData.message}
+                        onChange={handleChange}
                         placeholder="Tell us about your project..."
                         rows={5}
-                        required
+                        className={errors.message ? "border-red-500 focus-visible:ring-red-500" : ""}
                       />
+                      {errors.message && <span className="text-xs text-red-500 mt-1 block">{errors.message}</span>}
                     </div>
 
-                    <Button type="submit" variant="hero" size="lg" className="w-full">
-                      Send Message <Send className="w-5 h-5 ml-2" />
+                    <Button 
+                      type="submit" 
+                      variant="hero" 
+                      size="lg" 
+                      className="w-full"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>Sending... <Loader2 className="w-5 h-5 ml-2 animate-spin" /></>
+                      ) : (
+                        <>Send Message <Send className="w-5 h-5 ml-2" /></>
+                      )}
                     </Button>
                   </form>
                 )}
               </motion.div>
 
-              {/* Contact Info */}
+              {/* Contact Info Side */}
               <motion.div
                 initial={{ opacity: 0, x: 40 }}
                 animate={isFormInView ? { opacity: 1, x: 0 } : {}}
@@ -180,48 +352,30 @@ const Contact = () => {
                 </p>
 
                 <div className="space-y-6 mb-12">
-                  {contactInfo.map((info, index) => (
-                    <motion.a
-                      key={info.title}
-                      href={info.link}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={isFormInView ? { opacity: 1, y: 0 } : {}}
-                      transition={{ duration: 0.4, delay: 0.3 + index * 0.1 }}
-                      className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors group"
-                    >
-                      <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                        <info.icon className="w-6 h-6 text-primary" />
-                      </div>
-                      <div>
-                        <div className="font-semibold text-foreground">{info.title}</div>
-                        <div className="text-muted-foreground">{info.content}</div>
-                      </div>
-                    </motion.a>
-                  ))}
-                </div>
-
-                {/* Quick Actions */}
-                <div className="grid grid-cols-2 gap-4">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={isFormInView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ duration: 0.4, delay: 0.7 }}
-                  >
-                    <Button variant="outline" className="w-full h-auto py-4 flex-col gap-2">
-                      <MessageSquare className="w-6 h-6" />
-                      <span>Live Chat</span>
-                    </Button>
-                  </motion.div>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={isFormInView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ duration: 0.4, delay: 0.8 }}
-                  >
-                    <Button variant="outline" className="w-full h-auto py-4 flex-col gap-2">
-                      <Calendar className="w-6 h-6" />
-                      <span>Book a Call</span>
-                    </Button>
-                  </motion.div>
+                  {contactInfo.map((info, index) => {
+                    const Wrapper = info.link ? 'a' : 'div';
+                    return (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={isFormInView ? { opacity: 1, y: 0 } : {}}
+                        transition={{ duration: 0.4, delay: 0.3 + index * 0.1 }}
+                      >
+                        <Wrapper
+                          href={info.link || undefined}
+                          className={`flex items-start gap-4 p-4 rounded-xl bg-muted/50 transition-colors group ${info.link ? 'hover:bg-muted cursor-pointer' : ''}`}
+                        >
+                          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                            <info.icon className="w-6 h-6 text-primary" />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-foreground">{info.title}</div>
+                            <div className="text-muted-foreground text-sm leading-relaxed">{info.content}</div>
+                          </div>
+                        </Wrapper>
+                      </motion.div>
+                    );
+                  })}
                 </div>
               </motion.div>
             </div>
@@ -230,14 +384,15 @@ const Contact = () => {
 
         {/* Map Section */}
         <section className="h-96 bg-muted/50 flex items-center justify-center">
-  <iframe
-    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d951.5702634567523!2d78.39148346948299!3d17.44625707837821!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bcb91ac7d2a35b3%3A0xe30b8afc58d1c9ef!2sArah%20Infotech!5e0!3m2!1sen!2sin!4v1770637284007!5m2!1sen!2sin"
-    className="w-full h-full rounded-lg border-0"
-    allowFullScreen
-    loading="lazy"
-    referrerPolicy="no-referrer-when-downgrade"
-  ></iframe>
-</section>
+          <iframe
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d951.5702634567523!2d78.39148346948299!3d17.44625707837821!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bcb91ac7d2a35b3%3A0xe30b8afc58d1c9ef!2sArah%20Infotech!5e0!3m2!1sen!2sin!4v1770637284007!5m2!1sen!2sin"
+            className="w-full h-full rounded-lg border-0"
+            allowFullScreen
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            title="Arah Infotech Location"
+          ></iframe>
+        </section>
 
       </main>
       <Footer />

@@ -27,8 +27,8 @@ const slides = [
     subtitle: "Scale Your Reach with Smart Strategies",
     description: "Harness the power of analytics and AI to create marketing campaigns that convert visitors into loyal customers.",
     cta: "Explore Services",
-    ctaLink: "/services/digital-marketing",
-    secondaryCta: "View Case Studies",
+    ctaLink: "/services",
+ 
     secondaryLink: "/case-studies",
   },
   {
