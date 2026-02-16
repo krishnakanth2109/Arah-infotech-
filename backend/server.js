@@ -7,7 +7,8 @@ import connectDB from './config/db.js';
 import adminRoutes from './routes/adminRoutes.js';
 import careerRoutes from './routes/careerRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
-
+import applicationRoutes from './routes/applicationRoutes.js';
+import productRoutes from './routes/productRoutes.js';
 // Config
 dotenv.config();
 connectDB();
@@ -22,7 +23,8 @@ app.use(express.json()); // Parses JSON body
 app.use('/api/admin', adminRoutes);
 app.use('/api/careers', careerRoutes);
 app.use('/api/contact', contactRoutes);
-
+app.use('/api/applications', applicationRoutes); // Add this line
+app.use('/api/products', productRoutes);
 // Base Route
 app.get('/', (req, res) => {
   res.send('Arah Infotech API is running...');

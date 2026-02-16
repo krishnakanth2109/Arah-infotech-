@@ -57,5 +57,18 @@ export const loginAdmin = async (credentials: any) => {
   const response = await api.post('/admin/login', credentials);
   return response.data;
 };
+export const submitApplication = async (data: any) => {
+  const response = await api.post('/applications', data);
+  return response.data;
+};
 
+export const getApplications = async () => {
+  const response = await api.get('/applications');
+  return response.data;
+};
+
+export const deleteApplication = async (id: string) => {
+  const response = await api.delete(`/applications/${id}`);
+  return response.data;
+};
 export default api;
