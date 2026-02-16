@@ -3,10 +3,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, Outlet } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
-// Public Pages
+// --- Public Pages ---
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Services from "./pages/Services";
@@ -19,40 +19,34 @@ import Industries from "./pages/Industries";
 import Careers from "./pages/Careers";
 import NotFound from "./pages/NotFound";
 
-// Admin Components & Pages
+// --- Admin Pages ---
 import AdminLogin from "./pages/admin/Login";
-import AdminLayout from "./components/admin/AdminLayout";
-import DashboardHome from "./pages/admin/DashboardHome";
+// Note: AdminLayout is used inside the page components, so we don't use it as a Route wrapper here
+import DashboardHome from "./pages/admin/DashboardHome"; // Corresponds to Dashboard.tsx
 import Messages from "./pages/admin/Messages";
-import CareersAdmin from "./pages/admin/CareersAdmin"; 
-// Import the new Applications page
-import CareersApplications from "./pages/admin/CareersApplications"; 
-// Import the new Products Admin page
+import CareersAdmin from "./pages/admin/CareersAdmin"; // Manage Jobs
+import CareersApplications from "./pages/admin/CareersApplications"; // Corresponds to AdminCandidates.tsx
 import ProductsAdmin from "./pages/admin/ProductsAdmin";
+
+import ChatBot from "./components/ChatBot";
 
 const queryClient = new QueryClient();
 
-// --- Components ---
-
-// ScrollToTop Component: Ensures page starts at top when navigating
+// ScrollToTop Component
 const ScrollToTop = () => {
   const { pathname } = useLocation();
-
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
-
   return null;
 };
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = sessionStorage.getItem("adminToken");
-  
   if (!token) {
     return <Navigate to="/admin/login" replace />;
   }
-  
   return <>{children}</>;
 };
 
@@ -65,7 +59,6 @@ const App = () => {
           <Sonner />
           
           <BrowserRouter>
-            {/* Add ScrollToTop here inside BrowserRouter */}
             <ScrollToTop />
             
             <Routes>
@@ -85,30 +78,41 @@ const App = () => {
               <Route path="/admin/login" element={<AdminLogin />} />
 
               {/* --- Protected Admin Area --- */}
+              {/* 
+                 We use <Outlet /> here because the individual page components 
+                 (DashboardHome, CareersAdmin, etc.) already include the <AdminLayout> wrapper.
+              */}
               <Route 
                 path="/admin" 
                 element={
                   <ProtectedRoute>
-                    <AdminLayout />
+                    <Outlet />
                   </ProtectedRoute>
                 }
               >
-                {/* Default redirect to dashboard */}
+                {/* Default redirect */}
                 <Route index element={<Navigate to="dashboard" replace />} />
                 
-                {/* Admin Sub-routes */}
+                {/* Dashboard Overview */}
                 <Route path="dashboard" element={<DashboardHome />} />
-                <Route path="messages" element={<Messages />} />
-                <Route path="careers" element={<CareersAdmin />} />
-                <Route path="careersApplications" element={<CareersApplications />} />
                 
-                {/* NEW ROUTE: Products Management */}
+                {/* Communications */}
+                <Route path="messages" element={<Messages />} />
+            
+                
+                {/* Careers & Recruitment */}
+                <Route path="careers" element={<CareersAdmin />} />
+                <Route path="applications" element={<CareersApplications />} />
+                
+                {/* CMS / Content Management */}
                 <Route path="products" element={<ProductsAdmin />} />
+        
               </Route>
 
               {/* --- 404 --- */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <ChatBot />
           </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>
