@@ -11,9 +11,10 @@ import {
   Calendar,
   X 
 } from 'lucide-react';
-import { Button } from '@/components/ui/button'; // Assuming you have these
-import { Badge } from '@/components/ui/badge';   // Assuming you have these
-import { Input } from '@/components/ui/input';   // Assuming you have these
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { getApplications, deleteApplication } from '@/lib/api';
 
 // --- Types based on your Mongoose Schema ---
 interface Application {
@@ -29,8 +30,6 @@ interface Application {
   createdAt: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
 const CareersApplications = () => {
   const navigate = useNavigate();
   const [applications, setApplications] = useState<Application[]>([]);
@@ -40,34 +39,22 @@ const CareersApplications = () => {
 
   // --- Fetch Applications ---
   const fetchApplications = async () => {
+    const token = sessionStorage.getItem('adminToken');
+    if (!token) {
+      navigate('/admin/login');
+      return;
+    }
+
     try {
-      const token = sessionStorage.getItem('adminToken');
-      
-      if (!token) {
-        navigate('/admin/login');
-        return;
-      }
-
-      const response = await fetch(`${API_URL}/applications`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.status === 401) {
+      const data = await getApplications();
+      setApplications(data);
+    } catch (error: any) {
+      if (error?.response?.status === 401) {
         sessionStorage.removeItem('adminToken');
         navigate('/admin/login');
-        return;
+      } else {
+        console.error('Error fetching applications:', error);
       }
-
-      if (!response.ok) throw new Error('Failed to fetch applications');
-
-      const data = await response.json();
-      setApplications(data);
-    } catch (error) {
-      console.error('Error fetching applications:', error);
     } finally {
       setLoading(false);
     }
@@ -78,22 +65,12 @@ const CareersApplications = () => {
     if (!window.confirm('Are you sure you want to delete this application?')) return;
 
     try {
-      const token = sessionStorage.getItem('adminToken');
-      const response = await fetch(`${API_URL}/applications/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        setApplications((prev) => prev.filter((app) => app._id !== id));
-        if (selectedApp?._id === id) setSelectedApp(null);
-      } else {
-        alert('Failed to delete application');
-      }
+      await deleteApplication(id);
+      setApplications((prev) => prev.filter((app) => app._id !== id));
+      if (selectedApp?._id === id) setSelectedApp(null);
     } catch (error) {
       console.error('Error deleting application:', error);
+      alert('Failed to delete application');
     }
   };
 

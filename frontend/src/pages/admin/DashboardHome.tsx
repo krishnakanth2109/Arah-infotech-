@@ -19,27 +19,7 @@ import {
   TrendingUp 
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-
-// --- API Helpers (Mock or Import) ---
-// Assuming these are imported from '@/lib/api' as per your original code
-import { getCareers } from '@/lib/api'; 
-
-// We need a specific fetch for applications if you have a separate endpoint, 
-// otherwise we can filter contacts or fetch from /api/applications if that exists.
-// For this example, I will assume you might want to fetch applications directly 
-// or I will mock the data structure based on your request.
-const getApplications = async () => {
-  const res = await fetch('http://localhost:5000/api/applications', {
-    headers: { 'Authorization': `Bearer ${sessionStorage.getItem('adminToken')}` }
-  });
-  return res.json();
-};
-
-const getContacts = async () => {
-    const res = await fetch('http://localhost:5000/api/contact'); // Adjust URL if needed
-    return res.json();
-}
-
+import { getCareers, getApplications, getContacts } from '@/lib/api';
 
 const DashboardHome = () => {
   // 1. Fetch Data
@@ -75,7 +55,6 @@ const DashboardHome = () => {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
   // -- Bar Chart: Applications per Job Role --
-  // Group applications by jobTitle
   const jobCounts = applications.reduce((acc: any, app: any) => {
     const title = app.jobTitle || 'Unknown';
     acc[title] = (acc[title] || 0) + 1;
@@ -83,10 +62,9 @@ const DashboardHome = () => {
   }, {});
 
   const barData = Object.keys(jobCounts).map(title => ({
-    name: title.length > 15 ? title.substring(0, 15) + '...' : title, // Truncate long names
+    name: title.length > 15 ? title.substring(0, 15) + '...' : title,
     Applicants: jobCounts[title]
-  })).sort((a, b) => b.Applicants - a.Applicants).slice(0, 5); // Top 5 jobs
-
+  })).sort((a, b) => b.Applicants - a.Applicants).slice(0, 5);
 
   // 3. Stats Cards Data
   const stats = [
@@ -115,13 +93,15 @@ const DashboardHome = () => {
       bg: "bg-green-100"
     },
     {
-        title: "Conversion Rate",
-        value: applications.length > 0 ? `${Math.round((applications.filter((a:any) => a.status === 'Shortlisted').length / applications.length) * 100)}%` : "0%",
-        icon: TrendingUp,
-        desc: "Shortlisted candidates",
-        color: "text-orange-600",
-        bg: "bg-orange-100"
-      }
+      title: "Conversion Rate",
+      value: applications.length > 0
+        ? `${Math.round((applications.filter((a: any) => a.status === 'Shortlisted').length / applications.length) * 100)}%`
+        : "0%",
+      icon: TrendingUp,
+      desc: "Shortlisted candidates",
+      color: "text-orange-600",
+      bg: "bg-orange-100"
+    }
   ];
 
   return (
@@ -187,15 +167,15 @@ const DashboardHome = () => {
                       tickFormatter={(value) => `${value}`} 
                     />
                     <Tooltip 
-                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                        cursor={{ fill: 'transparent' }}
+                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      cursor={{ fill: 'transparent' }}
                     />
                     <Bar 
-                        dataKey="Applicants" 
-                        fill="currentColor" 
-                        radius={[4, 4, 0, 0]} 
-                        className="fill-primary" 
-                        barSize={40}
+                      dataKey="Applicants" 
+                      fill="currentColor" 
+                      radius={[4, 4, 0, 0]} 
+                      className="fill-primary" 
+                      barSize={40}
                     />
                   </BarChart>
                 </ResponsiveContainer>
@@ -218,31 +198,31 @@ const DashboardHome = () => {
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full">
-               {pieData.length > 0 ? (
+              {pieData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
+                  <PieChart>
                     <Pie
-                        data={pieData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
-                        dataKey="value"
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
                     >
-                        {pieData.map((entry, index) => (
+                      {pieData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
+                      ))}
                     </Pie>
                     <Tooltip contentStyle={{ borderRadius: '8px', border: 'none' }} />
-                    <Legend verticalAlign="bottom" height={36}/>
-                    </PieChart>
+                    <Legend verticalAlign="bottom" height={36} />
+                  </PieChart>
                 </ResponsiveContainer>
-               ) : (
+              ) : (
                 <div className="flex h-full items-center justify-center text-muted-foreground">
-                   No data to display.
+                  No data to display.
                 </div>
-               )}
+              )}
             </div>
           </CardContent>
         </Card>
