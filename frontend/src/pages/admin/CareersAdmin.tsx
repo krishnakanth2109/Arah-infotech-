@@ -11,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Pencil, Trash2, MapPin, Briefcase } from 'lucide-react';
 
+// No direct API URL needed here — all calls go through @/lib/api
+
 const CareersAdmin = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();

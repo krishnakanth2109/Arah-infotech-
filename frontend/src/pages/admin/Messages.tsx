@@ -3,7 +3,8 @@ import { getContacts } from '@/lib/api';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns'; // Make sure to npm install date-fns if needed, or use JS Date
+
+// No direct API URL needed — all calls go through @/lib/api
 
 const Messages = () => {
   const { data: contacts = [], isLoading } = useQuery({ 

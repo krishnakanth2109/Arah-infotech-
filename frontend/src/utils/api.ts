@@ -1,8 +1,9 @@
 import axios from 'axios';
 
-// Ensure you have VITE_API_URL defined in your .env file
-// Example .env: VITE_API_URL=http://localhost:5000/api
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// .env: VITE_API_URL="http://localhost:5000"  (no trailing /api)
+// We append /api here so all endpoints resolve correctly.
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = `${BASE_URL}/api`;
 
 const api = axios.create({
   baseURL: API_URL,
@@ -11,9 +12,8 @@ const api = axios.create({
   },
 });
 
-// Add a request interceptor to include the Token for admin routes
+// Add a request interceptor to include the token for admin routes
 api.interceptors.request.use((config) => {
-  // We use sessionStorage as per your request
   const token = sessionStorage.getItem('adminToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -57,6 +57,7 @@ export const loginAdmin = async (credentials: any) => {
   const response = await api.post('/admin/login', credentials);
   return response.data;
 };
+
 export const submitApplication = async (data: any) => {
   const response = await api.post('/applications', data);
   return response.data;
@@ -71,4 +72,25 @@ export const deleteApplication = async (id: string) => {
   const response = await api.delete(`/applications/${id}`);
   return response.data;
 };
+
+export const getProducts = async () => {
+  const response = await api.get('/products');
+  return response.data;
+};
+
+export const createProduct = async (data: any) => {
+  const response = await api.post('/products', data);
+  return response.data;
+};
+
+export const updateProduct = async (id: string, data: any) => {
+  const response = await api.put(`/products/${id}`, data);
+  return response.data;
+};
+
+export const deleteProduct = async (id: string) => {
+  const response = await api.delete(`/products/${id}`);
+  return response.data;
+};
+
 export default api;

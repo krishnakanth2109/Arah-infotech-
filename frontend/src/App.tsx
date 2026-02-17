@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
 // --- Public Pages ---
@@ -21,11 +21,11 @@ import NotFound from "./pages/NotFound";
 
 // --- Admin Pages ---
 import AdminLogin from "./pages/admin/Login";
-// Note: AdminLayout is used inside the page components, so we don't use it as a Route wrapper here
-import DashboardHome from "./pages/admin/DashboardHome"; // Corresponds to Dashboard.tsx
+import AdminLayout from "./components/admin/AdminLayout"; // 🔹 Import the layout
+import DashboardHome from "./pages/admin/DashboardHome"; 
 import Messages from "./pages/admin/Messages";
-import CareersAdmin from "./pages/admin/CareersAdmin"; // Manage Jobs
-import CareersApplications from "./pages/admin/CareersApplications"; // Corresponds to AdminCandidates.tsx
+import CareersAdmin from "./pages/admin/CareersAdmin"; 
+import CareersApplications from "./pages/admin/CareersApplications"; 
 import ProductsAdmin from "./pages/admin/ProductsAdmin";
 
 import ChatBot from "./components/ChatBot";
@@ -48,6 +48,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/admin/login" replace />;
   }
   return <>{children}</>;
+};
+
+// 🔹 New Component: Conditionally render ChatBot
+const ChatBotWrapper = () => {
+  const location = useLocation();
+  const isAdminPage = location.pathname.startsWith("/admin");
+  if (isAdminPage) return null;
+  return <ChatBot />;
 };
 
 const App = () => {
@@ -78,41 +86,27 @@ const App = () => {
               <Route path="/admin/login" element={<AdminLogin />} />
 
               {/* --- Protected Admin Area --- */}
-              {/* 
-                 We use <Outlet /> here because the individual page components 
-                 (DashboardHome, CareersAdmin, etc.) already include the <AdminLayout> wrapper.
-              */}
               <Route 
                 path="/admin" 
                 element={
                   <ProtectedRoute>
-                    <Outlet />
+                    <AdminLayout /> {/* 🔹 Changed from <Outlet /> to <AdminLayout /> */}
                   </ProtectedRoute>
                 }
               >
-                {/* Default redirect */}
                 <Route index element={<Navigate to="dashboard" replace />} />
-                
-                {/* Dashboard Overview */}
                 <Route path="dashboard" element={<DashboardHome />} />
-                
-                {/* Communications */}
                 <Route path="messages" element={<Messages />} />
-            
-                
-                {/* Careers & Recruitment */}
                 <Route path="careers" element={<CareersAdmin />} />
                 <Route path="applications" element={<CareersApplications />} />
-                
-                {/* CMS / Content Management */}
                 <Route path="products" element={<ProductsAdmin />} />
-        
               </Route>
 
               {/* --- 404 --- */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-            <ChatBot />
+
+            <ChatBotWrapper />
           </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>

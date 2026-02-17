@@ -31,6 +31,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { getProducts, createProduct as createProductApi, updateProduct as updateProductApi, deleteProduct as deleteProductApi } from '@/lib/api';
 
 // Icon Map for Display
 const iconMap = {
@@ -40,15 +41,13 @@ const iconMap = {
   Rocket: Rocket,
 };
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
 const ProductsAdmin = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
 
-  // Form State - No pricing field
+  // Form State
   const [formData, setFormData] = useState({
     icon: 'BarChart3',
     name: '',
@@ -61,27 +60,12 @@ const ProductsAdmin = () => {
   // Fetch Products
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['products'],
-    queryFn: async () => {
-      const res = await fetch(`${API_URL}/products`);
-      if (!res.ok) throw new Error('Failed to fetch products');
-      return res.json();
-    }
+    queryFn: getProducts
   });
 
   // Mutations
   const createProduct = useMutation({
-    mutationFn: async (newProduct: any) => {
-      const res = await fetch(`${API_URL}/products`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionStorage.getItem('adminToken')}`
-        },
-        body: JSON.stringify(newProduct)
-      });
-      if (!res.ok) throw new Error('Failed to create product');
-      return res.json();
-    },
+    mutationFn: (newProduct: any) => createProductApi(newProduct),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       setIsDialogOpen(false);
@@ -91,18 +75,7 @@ const ProductsAdmin = () => {
   });
 
   const updateProduct = useMutation({
-    mutationFn: async (updatedProduct: any) => {
-      const res = await fetch(`${API_URL}/products/${editingProduct._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionStorage.getItem('adminToken')}`
-        },
-        body: JSON.stringify(updatedProduct)
-      });
-      if (!res.ok) throw new Error('Failed to update product');
-      return res.json();
-    },
+    mutationFn: (updatedProduct: any) => updateProductApi(editingProduct._id, updatedProduct),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       setIsDialogOpen(false);
@@ -112,15 +85,7 @@ const ProductsAdmin = () => {
   });
 
   const deleteProduct = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`${API_URL}/products/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${sessionStorage.getItem('adminToken')}`
-        }
-      });
-      if (!res.ok) throw new Error('Failed to delete product');
-    },
+    mutationFn: (id: string) => deleteProductApi(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       toast({ title: "Deleted", description: "Product removed" });
