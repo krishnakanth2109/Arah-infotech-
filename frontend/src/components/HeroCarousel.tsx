@@ -29,7 +29,6 @@ const slides = [
     cta: "Explore Services",
     ctaLink: "/services",
  
-    secondaryLink: "/case-studies",
   },
   {
     id: 3,

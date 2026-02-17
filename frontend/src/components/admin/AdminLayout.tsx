@@ -56,21 +56,7 @@ const AdminLayout = () => {
           {!collapsed && <span className="whitespace-nowrap">Dashboard</span>}
         </NavLink>
 
-        <NavLink 
-          to="/admin/messages" 
-          className={({ isActive }) => 
-            cn(
-              "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group relative",
-              isActive ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted',
-              collapsed && "justify-center"
-            )
-          }
-          onClick={() => setIsOpen(false)}
-        >
-          <MessageSquare className="w-5 h-5 flex-shrink-0" />
-          {!collapsed && <span className="whitespace-nowrap">Messages</span>}
-        </NavLink>
-
+      
         <NavLink 
           to="/admin/careers" 
           className={({ isActive }) => 
@@ -115,6 +101,20 @@ const AdminLayout = () => {
         >
           <Package className="w-5 h-5 flex-shrink-0" />
           {!collapsed && <span className="whitespace-nowrap">Products</span>}
+        </NavLink>
+  <NavLink 
+          to="/admin/messages" 
+          className={({ isActive }) => 
+            cn(
+              "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group relative",
+              isActive ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted',
+              collapsed && "justify-center"
+            )
+          }
+          onClick={() => setIsOpen(false)}
+        >
+          <MessageSquare className="w-5 h-5 flex-shrink-0" />
+          {!collapsed && <span className="whitespace-nowrap">Contact Messages</span>}
         </NavLink>
 
         <div className="my-2 border-t border-border/50 mx-2" />
