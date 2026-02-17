@@ -6,6 +6,7 @@ import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { submitContact } from '@/lib/api';
 import { 
   Mail, 
   Phone, 
@@ -17,7 +18,6 @@ import {
 } from 'lucide-react';
 import contactHero from '@/assets/contact-hero.jpg';
 
-// Fixed typos in address and standardized structure
 const contactInfo = [
   {
     icon: Mail,
@@ -41,7 +41,7 @@ const contactInfo = [
     icon: MapPin,
     title: 'Visit Us',
     content: 'Ground Floor, 83, Shamukh Empire, Ayyappa Society, Madhapur, Hyderabad, Telangana 500081',
-    link: 'https://maps.google.com', // Optional link
+    link: 'https://maps.google.com',
   },
   {
     icon: Clock,
@@ -73,7 +73,6 @@ const Contact = () => {
   const formRef = useRef(null);
   const isFormInView = useInView(formRef, { once: true, margin: '-100px' });
   
-  // State for Form Data
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
     lastName: '',
@@ -83,30 +82,25 @@ const Contact = () => {
     message: ''
   });
 
-  // State for Errors and Submission Status
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
-  // Handle Input Changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    
-    // Clear error for this field when user starts typing
     if (errors[name as keyof FormErrors]) {
       setErrors(prev => ({ ...prev, [name]: undefined }));
     }
   };
 
-  // Validation Logic
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
-    const nameRegex = /^[a-zA-Z\s]+$/; // Only letters and spaces
+    const nameRegex = /^[a-zA-Z\s]+$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^\+?[0-9\s-()]{10,}$/; // Min 10 chars, allows +, -, space, ()
+    const phoneRegex = /^\+?[0-9\s-()]{10,}$/;
 
-    // First Name Validation
     if (!formData.firstName.trim()) {
       newErrors.firstName = 'First name is required';
     } else if (!nameRegex.test(formData.firstName)) {
@@ -115,33 +109,28 @@ const Contact = () => {
       newErrors.firstName = 'First name must be at least 2 characters';
     }
 
-    // Last Name Validation
     if (!formData.lastName.trim()) {
       newErrors.lastName = 'Last name is required';
     } else if (!nameRegex.test(formData.lastName)) {
       newErrors.lastName = 'Last name should only contain letters';
     }
 
-    // Email Validation
     if (!formData.email.trim()) {
       newErrors.email = 'Email address is required';
     } else if (!emailRegex.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
 
-    // Phone Validation
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone number is required';
     } else if (!phoneRegex.test(formData.phone)) {
       newErrors.phone = 'Please enter a valid phone number (min 10 digits)';
     }
 
-    // Service Validation
     if (!formData.service) {
       newErrors.service = 'Please select a service';
     }
 
-    // Message Validation
     if (!formData.message.trim()) {
       newErrors.message = 'Message is required';
     } else if (formData.message.length < 10) {
@@ -154,19 +143,30 @@ const Contact = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (validateForm()) {
-      setIsSubmitting(true);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      console.log('Form Submitted:', formData);
-      setIsSubmitting(false);
+    setSubmitError('');
+
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+
+    try {
+      // Map form fields to the backend Contact model:
+      // firstName + lastName → fullName
+      // service → subject
+      await submitContact({
+        fullName: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        subject: formData.service,
+        message: formData.message.trim(),
+      });
+
       setIsSubmitted(true);
-      
-      // Reset form after 5 seconds or keep the success message
-      // setTimeout(() => setIsSubmitted(false), 5000); 
+    } catch (error) {
+      console.error('Contact form submission error:', error);
+      setSubmitError('Something went wrong. Please try again or contact us directly.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -297,11 +297,11 @@ const Contact = () => {
                         className={`w-full h-11 px-4 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${errors.service ? "border-red-500 focus:ring-red-500" : "border-input"}`}
                       >
                         <option value="">Select a service</option>
-                        <option value="website">Website Design</option>
-                        <option value="marketing">Digital Marketing</option>
-                        <option value="ai">AI Solutions</option>
-                        <option value="branding">Branding</option>
-                        <option value="other">Other</option>
+                        <option value="Website Design">Website Design</option>
+                        <option value="Digital Marketing">Digital Marketing</option>
+                        <option value="AI Solutions">AI Solutions</option>
+                        <option value="Branding">Branding</option>
+                        <option value="Other">Other</option>
                       </select>
                       {errors.service && <span className="text-xs text-red-500 mt-1 block">{errors.service}</span>}
                     </div>
@@ -320,6 +320,13 @@ const Contact = () => {
                       />
                       {errors.message && <span className="text-xs text-red-500 mt-1 block">{errors.message}</span>}
                     </div>
+
+                    {/* API error message */}
+                    {submitError && (
+                      <div className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                        {submitError}
+                      </div>
+                    )}
 
                     <Button 
                       type="submit" 
@@ -393,7 +400,6 @@ const Contact = () => {
             title="Arah Infotech Location"
           ></iframe>
         </section>
-
       </main>
       <Footer />
     </div>
