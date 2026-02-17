@@ -19,19 +19,19 @@ const footerLinks = {
   company: [
     { name: 'About Us', href: '/about' },
     { name: 'Careers', href: '/careers' },
-    { name: 'Case Studies', href: '/case-studies' },
-    { name: 'Blog', href: '/blog' },
+   
+    { name: 'Contact Us', href: '/contact' },
   ],
   services: [
-    { name: 'Website Designing', href: '/services/website-designing' },
+    { name: 'Software Development', href: '/services/website-designing' },
     { name: 'Digital Marketing', href: '/services/digital-marketing' },
     { name: 'AI Solutions', href: '/services/ai-solutions' },
     { name: 'All Services', href: '/services' },
   ],
   products: [
     { name: 'Our Products', href: '/products' },
-    { name: 'Industries', href: '/industries' },
-    { name: 'Contact Us', href: '/contact' },
+    { name: 'Industries', href: '/industries' }
+ 
   ],
 };
 
@@ -58,7 +58,7 @@ const Footer = () => {
               <img src={logo} alt="Arah Infotech" className="h-10 w-auto object-contain" />
             </Link>
             <p className="text-muted-foreground leading-relaxed">
-              We help businesses grow with AI-driven digital solutions—combining smart technology, creative thinking, and clear strategy.
+              We help businesses grow with AI-driven digital solutions  combining smart technology, creative thinking, and clear strategy.
             </p>
             
             {/* Social Links moved here */}
