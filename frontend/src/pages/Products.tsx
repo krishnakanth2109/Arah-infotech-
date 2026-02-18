@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import heroBanner2 from '@/assets/hero-banner-2.jpg';
 import { useQuery } from '@tanstack/react-query';
-
+import { getProducts } from '@/lib/api';
 // Map string icon names to components
 const iconMap: any = {
   BarChart3: BarChart3,
