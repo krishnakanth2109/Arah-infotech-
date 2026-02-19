@@ -162,6 +162,11 @@
   .glass-dark {
     @apply backdrop-blur-xl bg-card/80 border border-border/30;
   }
+  
+  .glass-panel {
+    @apply backdrop-blur-xl bg-background/70 border border-primary/20;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+  }
 
   /* Animation utilities */
   .animate-float {

@@ -1,11 +1,12 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
-// Public Pages
+// --- Public Pages ---
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Services from "./pages/Services";
@@ -18,19 +19,30 @@ import Industries from "./pages/Industries";
 import Careers from "./pages/Careers";
 import NotFound from "./pages/NotFound";
 
-// Admin Components & Pages
+// --- Admin Pages ---
 import AdminLogin from "./pages/admin/Login";
-import AdminLayout from "./components/admin/AdminLayout";
+import AdminLayout from "./components/admin/AdminLayout"; // 🔹 Import the layout
 import DashboardHome from "./pages/admin/DashboardHome";
 import Messages from "./pages/admin/Messages";
-import CareersAdmin from "./pages/admin/CareersAdmin"; // Make sure file exists now
+import CareersAdmin from "./pages/admin/CareersAdmin";
+import CareersApplications from "./pages/admin/CareersApplications";
+import ProductsAdmin from "./pages/admin/ProductsAdmin";
+
 import Chatbot from "./components/Chatbot";
 
 const queryClient = new QueryClient();
 
+// ScrollToTop Component
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+};
+
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  // CHANGED: Use sessionStorage
   const token = sessionStorage.getItem("adminToken");
 
   if (!token) {
@@ -38,6 +50,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   return <>{children}</>;
+};
+
+// 🔹 New Component: Conditionally render ChatBot
+const ChatBotWrapper = () => {
+  const location = useLocation();
+  const isAdminPage = location.pathname.startsWith("/admin");
+  if (isAdminPage) return null;
+  return <Chatbot />;
 };
 
 const App = () => {
@@ -49,6 +69,8 @@ const App = () => {
           <Sonner />
 
           <BrowserRouter>
+            <ScrollToTop />
+
             <Routes>
               {/* --- Public Routes --- */}
               <Route path="/" element={<Index />} />
@@ -70,7 +92,7 @@ const App = () => {
                 path="/admin"
                 element={
                   <ProtectedRoute>
-                    <AdminLayout />
+                    <AdminLayout /> {/* 🔹 Changed from <Outlet /> to <AdminLayout /> */}
                   </ProtectedRoute>
                 }
               >
@@ -78,13 +100,16 @@ const App = () => {
                 <Route path="dashboard" element={<DashboardHome />} />
                 <Route path="messages" element={<Messages />} />
                 <Route path="careers" element={<CareersAdmin />} />
+                <Route path="applications" element={<CareersApplications />} />
+                <Route path="products" element={<ProductsAdmin />} />
               </Route>
 
               {/* --- 404 --- */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+
+            <ChatBotWrapper />
           </BrowserRouter>
-          <Chatbot />
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>

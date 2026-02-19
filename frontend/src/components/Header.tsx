@@ -13,7 +13,7 @@ const navItems = [
     name: 'Services', 
     href: '/services',
     submenu: [
-      { name: 'Website Designing', href: '/services/website-designing' },
+      { name: 'software development ', href: '/services/website-designing' },
       { name: 'Digital Marketing', href: '/services/digital-marketing' },
       { name: 'AI Solutions', href: '/services/ai-solutions' },
     ]

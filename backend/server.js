@@ -3,11 +3,16 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './config/db.js';
 
+// 🔹 Import Chatbot Service
+import { loadKnowledge, getChatResponse } from './chatbotService.js';
+
 // Import Routes
 import adminRoutes from './routes/adminRoutes.js';
 import careerRoutes from './routes/careerRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
+import applicationRoutes from './routes/applicationRoutes.js';
+import productRoutes from './routes/productRoutes.js';
 
 // Config
 dotenv.config();
@@ -40,11 +45,47 @@ app.use(cors({
 // Middleware
 app.use(express.json()); // Parses JSON body
 
-// Routes
+// ============================
+// 🔥 LOAD CHATBOT KNOWLEDGE (ASYNCHRONOUSLY)
+// ============================
+// We don't 'await' this so the server starts immediately.
+// Scraping is handled in the background.
+loadKnowledge().catch(error => {
+  console.error("⚠️ Failed to load chatbot knowledge in background:", error.message);
+});
+
+// ============================
+// 🤖 CHATBOT API ROUTE (DYNAMIC SCRAPING)
+// ============================
+app.post('/api/chatbot', async (req, res) => {
+  try {
+    const { message } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ error: "Message is required" });
+    }
+
+    // Call the function from chatbotService.js
+    const aiReply = await getChatResponse(message);
+
+    // Return the response to the frontend
+    res.json({ reply: aiReply });
+
+  } catch (error) {
+    console.error("Chatbot Route Error:", error);
+    res.status(500).json({ error: "Failed to process chat request" });
+  }
+});
+
+// ============================
+// 📂 OTHER ROUTES
+// ============================
 app.use('/api/admin', adminRoutes);
 app.use('/api/careers', careerRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/applications', applicationRoutes);
+app.use('/api/products', productRoutes);
 
 // Base Route
 app.get('/', (req, res) => {
@@ -53,6 +94,8 @@ app.get('/', (req, res) => {
 
 // Start Server
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
+
