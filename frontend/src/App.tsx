@@ -24,6 +24,7 @@ import AdminLayout from "./components/admin/AdminLayout";
 import DashboardHome from "./pages/admin/DashboardHome";
 import Messages from "./pages/admin/Messages";
 import CareersAdmin from "./pages/admin/CareersAdmin"; // Make sure file exists now
+import Chatbot from "./components/Chatbot";
 
 const queryClient = new QueryClient();
 
@@ -31,11 +32,11 @@ const queryClient = new QueryClient();
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   // CHANGED: Use sessionStorage
   const token = sessionStorage.getItem("adminToken");
-  
+
   if (!token) {
     return <Navigate to="/admin/login" replace />;
   }
-  
+
   return <>{children}</>;
 };
 
@@ -46,7 +47,7 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          
+
           <BrowserRouter>
             <Routes>
               {/* --- Public Routes --- */}
@@ -60,13 +61,13 @@ const App = () => {
               <Route path="/products" element={<Products />} />
               <Route path="/industries" element={<Industries />} />
               <Route path="/careers" element={<Careers />} />
-              
+
               {/* --- Admin Authentication --- */}
               <Route path="/admin/login" element={<AdminLogin />} />
 
               {/* --- Protected Admin Area --- */}
-              <Route 
-                path="/admin" 
+              <Route
+                path="/admin"
                 element={
                   <ProtectedRoute>
                     <AdminLayout />
@@ -83,6 +84,7 @@ const App = () => {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
+          <Chatbot />
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
