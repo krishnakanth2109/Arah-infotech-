@@ -18,7 +18,8 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import heroBanner2 from '@/assets/hero-banner-2.jpg';
 import { useQuery } from '@tanstack/react-query';
-import { getProducts } from '@/lib/api';
+import { getProducts } from '@/lib/api'; // <-- Properly utilizing this import now
+
 // Map string icon names to components
 const iconMap: any = {
   BarChart3: BarChart3,
@@ -27,20 +28,15 @@ const iconMap: any = {
   Rocket: Rocket,
 };
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
 const Products = () => {
   const productsRef = useRef(null);
   const isProductsInView = useInView(productsRef, { once: true, margin: '-100px' });
 
-  // Fetch products from API
+  // ✅ FIX: Replaced the manual 'fetch' with your configured API function
+  // This guarantees the User side fetches data exactly like the Admin side does.
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['products'],
-    queryFn: async () => {
-      const res = await fetch(`${API_URL}/products`);
-      if (!res.ok) throw new Error('Failed to fetch products');
-      return res.json();
-    }
+    queryFn: getProducts 
   });
 
   return (

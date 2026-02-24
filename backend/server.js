@@ -6,36 +6,75 @@ import connectDB from './config/db.js';
 // 🔹 Import Chatbot Service
 import { loadKnowledge, getChatResponse } from './chatbotService.js';
 
-// Import Routes
+// 🔹 Import Routes
 import adminRoutes from './routes/adminRoutes.js';
 import careerRoutes from './routes/careerRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
+import chatRoutes from './routes/chatRoutes.js';
 import applicationRoutes from './routes/applicationRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 
-// Config
+// ============================
+// ⚙️ CONFIG
+// ============================
 dotenv.config();
 connectDB();
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// ============================
+// 🌍 CORS CONFIGURATION
+// ============================
+
+const allowedOrigins = [
+  "https://arah-infotech-technology.netlify.app", // Production Frontend
+  "http://localhost:5173", // Vite Local
+  "http://localhost:8080"  // Optional local port
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests without origin (Postman, curl, mobile apps)
+      if (!origin) return callback(null, true);
+
+      if (!allowedOrigins.includes(origin)) {
+        return callback(
+          new Error("CORS policy does not allow access from this Origin"),
+          false
+        );
+      }
+
+      return callback(null, true);
+    },
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
+
+// ============================
+// 🧩 MIDDLEWARE
+// ============================
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // ============================
-// 🔥 LOAD CHATBOT KNOWLEDGE
+// 🔥 LOAD CHATBOT KNOWLEDGE (Background)
 // ============================
-// (Wrapped in try/catch to prevent server crash if scraping fails)
-try {
-  await loadKnowledge();
-} catch (error) {
-  console.error("⚠️ Failed to load chatbot knowledge:", error.message);
-}
+// Do NOT await — prevents server crash if scraping fails
+
+loadKnowledge()
+  .then(() => {
+    console.log("✅ Chatbot knowledge loaded successfully");
+  })
+  .catch((error) => {
+    console.error("⚠️ Failed to load chatbot knowledge:", error.message);
+  });
 
 // ============================
-// 🤖 CHATBOT API ROUTE (ADDED)
+// 🤖 CHATBOT ROUTE
 // ============================
+
 app.post('/api/chatbot', async (req, res) => {
   try {
     const { message } = req.body;
@@ -44,11 +83,9 @@ app.post('/api/chatbot', async (req, res) => {
       return res.status(400).json({ error: "Message is required" });
     }
 
-    // Call the function from chatbotService.js
     const aiReply = await getChatResponse(message);
 
-    // Return the response to the frontend
-    res.json({ reply: aiReply });
+    res.status(200).json({ reply: aiReply });
 
   } catch (error) {
     console.error("Chatbot Route Error:", error);
@@ -59,18 +96,26 @@ app.post('/api/chatbot', async (req, res) => {
 // ============================
 // 📂 OTHER ROUTES
 // ============================
+
 app.use('/api/admin', adminRoutes);
 app.use('/api/careers', careerRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/chat', chatRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/products', productRoutes);
 
-// Base Route
+// ============================
+// 🏠 BASE ROUTE
+// ============================
+
 app.get('/', (req, res) => {
-  res.send('Arah Infotech API is running...');
+  res.send('🚀 Arah Infotech API is running...');
 });
 
-// Start Server
+// ============================
+// 🚀 START SERVER
+// ============================
+
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {

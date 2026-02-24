@@ -8,7 +8,8 @@ import {
   Zap, 
   Shield, 
   Rocket, 
-  Loader2 
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +42,26 @@ const iconMap = {
   Rocket: Rocket,
 };
 
+// ==========================================
+// 🛡️ STRICT REGEX PATTERNS FOR VALIDATION
+// ==========================================
+const PATTERNS = {
+  // Name: Only letters, numbers, spaces, hyphens, and ampersands
+  NAME: /^[a-zA-Z0-9\s\-_&]+$/, 
+  
+  // Tagline: Alphanumeric + basic punctuation (.,!?)
+  TAGLINE: /^[a-zA-Z0-9\s\-_.,!?&()]+$/, 
+  
+  // Description: No HTML tags (< >) to prevent XSS attacks
+  DESCRIPTION_SAFE: /^[^<>]+$/, 
+  
+  // Feature (Per item): Alphanumeric + basic punctuation
+  FEATURE: /^[a-zA-Z0-9\s\-_.,&]+$/, 
+  
+  // Badge: Strictly letters, numbers, and spaces
+  BADGE: /^[a-zA-Z0-9\s]+$/, 
+};
+
 const ProductsAdmin = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -53,9 +74,12 @@ const ProductsAdmin = () => {
     name: '',
     tagline: '',
     description: '',
-    features: '', // comma separated string
+    features: '', 
     badge: ''
   });
+
+  // Validation Error State
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Fetch Products
   const { data: products = [], isLoading } = useQuery({
@@ -68,8 +92,7 @@ const ProductsAdmin = () => {
     mutationFn: (newProduct: any) => createProductApi(newProduct),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
-      setIsDialogOpen(false);
-      resetForm();
+      handleCloseDialog();
       toast({ title: "Success", description: "Product created successfully" });
     }
   });
@@ -78,8 +101,7 @@ const ProductsAdmin = () => {
     mutationFn: (updatedProduct: any) => updateProductApi(editingProduct._id, updatedProduct),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
-      setIsDialogOpen(false);
-      resetForm();
+      handleCloseDialog();
       toast({ title: "Success", description: "Product updated successfully" });
     }
   });
@@ -92,7 +114,82 @@ const ProductsAdmin = () => {
     }
   });
 
+  // ==========================================
+  // 🛡️ STRICT VALIDATION LOGIC
+  // ==========================================
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    // 1. Icon Validation (Must be exactly one of the allowed keys)
+    if (!Object.keys(iconMap).includes(formData.icon)) {
+      newErrors.icon = "Invalid icon selected. Please choose from the list.";
+    }
+
+    // 2. Name Validation (Length: 3-50, Pattern: Alphanumeric + specific symbols)
+    const nameTrimmed = formData.name.trim();
+    if (nameTrimmed.length < 3 || nameTrimmed.length > 50) {
+      newErrors.name = "Name must be between 3 and 50 characters long.";
+    } else if (!PATTERNS.NAME.test(nameTrimmed)) {
+      newErrors.name = "Name can only contain letters, numbers, spaces, hyphens, and '&'.";
+    }
+
+    // 3. Tagline Validation (Length: 5-120, Pattern: No weird symbols/HTML)
+    const taglineTrimmed = formData.tagline.trim();
+    if (taglineTrimmed.length < 5 || taglineTrimmed.length > 120) {
+      newErrors.tagline = "Tagline must be between 5 and 120 characters long.";
+    } else if (!PATTERNS.TAGLINE.test(taglineTrimmed)) {
+      newErrors.tagline = "Tagline contains invalid characters. No HTML or special symbols allowed.";
+    }
+
+    // 4. Description Validation (Length: 20-1000, Pattern: No HTML '<' or '>')
+    const descTrimmed = formData.description.trim();
+    if (descTrimmed.length < 20 || descTrimmed.length > 1000) {
+      newErrors.description = "Description must be detailed (between 20 and 1000 characters).";
+    } else if (!PATTERNS.DESCRIPTION_SAFE.test(descTrimmed)) {
+      newErrors.description = "Description cannot contain HTML brackets ('<' or '>') for security reasons.";
+    }
+
+    // 5. Features Validation (Array of strings, strict validation on EACH feature)
+    const featuresTrimmed = formData.features.trim();
+    if (featuresTrimmed.length === 0) {
+      newErrors.features = "Please enter at least one feature.";
+    } else {
+      const featuresArray = featuresTrimmed.split(',').map(f => f.trim()).filter(Boolean);
+      
+      if (featuresArray.length === 0) {
+        newErrors.features = "Invalid format. Separate features with commas.";
+      } else {
+        // Validate EVERY SINGLE feature in the comma-separated list
+        const invalidFeature = featuresArray.find(
+          f => f.length < 3 || f.length > 100 || !PATTERNS.FEATURE.test(f)
+        );
+
+        if (invalidFeature) {
+          newErrors.features = `Invalid feature detected: "${invalidFeature}". Each feature must be 3-100 characters and contain no special symbols.`;
+        }
+      }
+    }
+
+    // 6. Badge Validation (Optional, but STRICT if provided)
+    const badgeTrimmed = formData.badge.trim();
+    if (badgeTrimmed.length > 0) {
+      if (badgeTrimmed.length < 2 || badgeTrimmed.length > 20) {
+        newErrors.badge = "Badge text must be between 2 and 20 characters.";
+      } else if (!PATTERNS.BADGE.test(badgeTrimmed)) {
+        newErrors.badge = "Badge can ONLY contain letters, numbers, and spaces.";
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   // Helpers
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    resetForm();
+  };
+
   const resetForm = () => {
     setFormData({
       icon: 'BarChart3',
@@ -103,6 +200,7 @@ const ProductsAdmin = () => {
       badge: ''
     });
     setEditingProduct(null);
+    setErrors({});
   };
 
   const handleEdit = (product: any) => {
@@ -115,11 +213,23 @@ const ProductsAdmin = () => {
       features: product.features.join(', '),
       badge: product.badge || ''
     });
+    setErrors({});
     setIsDialogOpen(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Run Validation
+    if (!validateForm()) {
+      toast({ 
+        variant: "destructive", 
+        title: "Validation Error", 
+        description: "Please fix the highlighted errors before saving." 
+      });
+      return;
+    }
+
     const payload = {
       ...formData,
       features: formData.features.split(',').map(s => s.trim()).filter(Boolean)
@@ -129,6 +239,18 @@ const ProductsAdmin = () => {
       updateProduct.mutate(payload);
     } else {
       createProduct.mutate(payload);
+    }
+  };
+
+  // Generic Change Handler to clear errors on typing
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
     }
   };
 
@@ -177,7 +299,7 @@ const ProductsAdmin = () => {
               <Button variant="outline" size="sm" onClick={() => handleEdit(product)}>
                 <Edit className="w-4 h-4 mr-2" /> Edit
               </Button>
-              <Button variant="destructive" size="sm" onClick={() => { if(confirm('Delete this product?')) deleteProduct.mutate(product._id) }}>
+              <Button variant="destructive" size="sm" onClick={() => { if(confirm('Are you sure you want to delete this product?')) deleteProduct.mutate(product._id) }}>
                 <Trash2 className="w-4 h-4 mr-2" /> Delete
               </Button>
             </CardFooter>
@@ -191,14 +313,16 @@ const ProductsAdmin = () => {
             <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
+            
             <div className="grid grid-cols-2 gap-4">
+              {/* Icon Selection */}
               <div className="space-y-2">
-                <Label>Icon</Label>
+                <Label htmlFor="icon">Icon <span className="text-red-500">*</span></Label>
                 <Select 
                   value={formData.icon} 
-                  onValueChange={(val) => setFormData(prev => ({ ...prev, icon: val }))}
+                  onValueChange={(val) => handleChange('icon', val)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={errors.icon ? "border-red-500" : ""}>
                     <SelectValue placeholder="Select Icon" />
                   </SelectTrigger>
                   <SelectContent>
@@ -208,57 +332,79 @@ const ProductsAdmin = () => {
                     <SelectItem value="Rocket">Rocket</SelectItem>
                   </SelectContent>
                 </Select>
+                {errors.icon && <p className="text-xs text-red-500 mt-1 flex items-center"><AlertCircle className="w-3 h-3 mr-1"/>{errors.icon}</p>}
               </div>
+
+              {/* Badge Input */}
               <div className="space-y-2">
-                <Label>Badge (Optional)</Label>
+                <Label htmlFor="badge">Badge (Optional)</Label>
                 <Input 
+                  id="badge"
                   value={formData.badge} 
-                  onChange={e => setFormData(prev => ({ ...prev, badge: e.target.value }))} 
-                  placeholder="e.g. Most Popular" 
+                  onChange={e => handleChange('badge', e.target.value)}
+                  placeholder="e.g. Popular" 
+                  className={errors.badge ? "border-red-500" : ""}
                 />
+                {errors.badge && <p className="text-xs text-red-500 mt-1 flex items-start"><AlertCircle className="w-3 h-3 mr-1 mt-0.5 shrink-0"/>{errors.badge}</p>}
               </div>
             </div>
 
+            {/* Name Input */}
             <div className="space-y-2">
-              <Label>Product Name</Label>
+              <Label htmlFor="name">Product Name <span className="text-red-500">*</span></Label>
               <Input 
-                required
+                id="name"
                 value={formData.name} 
-                onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))} 
+                onChange={e => handleChange('name', e.target.value)}
+                placeholder="e.g. Analytics Pro"
+                className={errors.name ? "border-red-500" : ""}
               />
+              {errors.name && <p className="text-xs text-red-500 mt-1 flex items-start"><AlertCircle className="w-3 h-3 mr-1 mt-0.5 shrink-0"/>{errors.name}</p>}
             </div>
 
+            {/* Tagline Input */}
             <div className="space-y-2">
-              <Label>Tagline</Label>
+              <Label htmlFor="tagline">Tagline <span className="text-red-500">*</span></Label>
               <Input 
-                required
+                id="tagline"
                 value={formData.tagline} 
-                onChange={e => setFormData(prev => ({ ...prev, tagline: e.target.value }))} 
+                onChange={e => handleChange('tagline', e.target.value)}
+                placeholder="Brief catchy phrase"
+                className={errors.tagline ? "border-red-500" : ""}
               />
+              {errors.tagline && <p className="text-xs text-red-500 mt-1 flex items-start"><AlertCircle className="w-3 h-3 mr-1 mt-0.5 shrink-0"/>{errors.tagline}</p>}
             </div>
 
+            {/* Description Input */}
             <div className="space-y-2">
-              <Label>Description</Label>
+              <Label htmlFor="description">Description <span className="text-red-500">*</span></Label>
               <Textarea 
-                required
+                id="description"
                 value={formData.description} 
-                onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))} 
+                onChange={e => handleChange('description', e.target.value)}
                 rows={4}
+                placeholder="Detailed explanation of the product..."
+                className={errors.description ? "border-red-500" : ""}
               />
+              {errors.description && <p className="text-xs text-red-500 mt-1 flex items-start"><AlertCircle className="w-3 h-3 mr-1 mt-0.5 shrink-0"/>{errors.description}</p>}
             </div>
 
+            {/* Features Input */}
             <div className="space-y-2">
-              <Label>Features (comma separated)</Label>
+              <Label htmlFor="features">Features (comma separated) <span className="text-red-500">*</span></Label>
               <Textarea 
-                required
+                id="features"
                 value={formData.features} 
-                onChange={e => setFormData(prev => ({ ...prev, features: e.target.value }))} 
-                placeholder="Feature 1, Feature 2, Feature 3"
+                onChange={e => handleChange('features', e.target.value)}
+                placeholder="Real-time tracking, PDF Export, User Management"
+                className={errors.features ? "border-red-500" : ""}
               />
+              <p className="text-xs text-muted-foreground">Separate each feature with a comma.</p>
+              {errors.features && <p className="text-xs text-red-500 mt-1 flex items-start"><AlertCircle className="w-3 h-3 mr-1 mt-0.5 shrink-0"/>{errors.features}</p>}
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={handleCloseDialog}>Cancel</Button>
               <Button type="submit" disabled={createProduct.isPending || updateProduct.isPending}>
                 {createProduct.isPending || updateProduct.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Product'}
               </Button>

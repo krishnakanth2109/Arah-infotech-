@@ -3,7 +3,8 @@ import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
 import { useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getCareers } from '@/lib/api'; // Removed submitContact
+// 1. IMPORT submitApplication from your API file
+import { getCareers, submitApplication } from '@/lib/api'; 
 import { 
   MapPin, 
   Building, 
@@ -25,9 +26,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
-// --- Configuration ---
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
 // Static Benefits Data
 const benefits = [
   { icon: DollarSign, title: 'Competitive Salary', description: 'Industry-competitive salaries with regular reviews.' },
@@ -39,7 +37,8 @@ const benefits = [
 ];
 
 interface Job {
-  _id: string;
+  _id?: string;
+  id?: string;
   jobRole: string;
   dept: string;
   location: string;
@@ -111,14 +110,13 @@ const Careers = () => {
     const nameRegex = /^[a-zA-Z\s]+$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^\+?[0-9\s-()]{10,}$/;
-    // const urlRegex = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
 
     // Name Validation
     if (!appForm.fullName.trim()) {
       newErrors.fullName = 'Full Name is required';
     } else if (!nameRegex.test(appForm.fullName)) {
       newErrors.fullName = 'Name should only contain letters';
-    } else if (appForm.fullName.length < 2) {
+    } else if (appForm.fullName.trim().length < 2) {
       newErrors.fullName = 'Name must be at least 2 characters';
     }
 
@@ -135,14 +133,11 @@ const Careers = () => {
     } else if (!phoneRegex.test(appForm.phone)) {
       newErrors.phone = 'Invalid phone number (min 10 digits)';
     }
-
-    // LinkedIn Validation (Optional)
-    // Removed strict regex to allow simple profile links, but you can uncomment urlRegex above if needed.
     
     // Cover Letter Validation
     if (!appForm.coverLetter.trim()) {
       newErrors.coverLetter = 'Cover letter is required';
-    } else if (appForm.coverLetter.length < 20) {
+    } else if (appForm.coverLetter.trim().length < 20) {
       newErrors.coverLetter = 'Please write at least 20 characters';
     }
 
@@ -158,9 +153,11 @@ const Careers = () => {
     setIsSubmitting(true);
 
     try {
-      // --- Construct Payload matching Mongoose Schema ---
+      // Safely grab the job ID whether the backend uses _id or id
+      const jobId = selectedJob._id || selectedJob.id;
+
       const payload = {
-        jobId: selectedJob._id,
+        jobId: jobId,
         jobTitle: selectedJob.jobRole,
         fullName: appForm.fullName,
         email: appForm.email,
@@ -169,32 +166,26 @@ const Careers = () => {
         coverLetter: appForm.coverLetter
       };
 
-      // --- Send POST Request ---
-      const response = await fetch(`${API_URL}/applications`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to submit application');
-      }
+      // 2. REPLACED fetch WITH Axios API function
+      await submitApplication(payload);
 
       toast({
         title: 'Application Submitted!',
         description: `We have received your application for ${selectedJob.jobRole}.`,
-        variant: "default" // Green/Success typically default
+        variant: "default" 
       });
       
       setIsApplicationModalOpen(false);
       
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      console.error("Submission Error Details:", error);
+      
+      // Axios stores the backend message in error.response.data.message
+      const errorMessage = error.response?.data?.message || error.message || 'There was an error submitting your application. Please try again.';
+      
       toast({ 
         title: 'Submission Failed', 
-        description: 'There was an error submitting your application. Please try again.', 
+        description: errorMessage, 
         variant: 'destructive' 
       });
     } finally {
@@ -245,12 +236,12 @@ const Careers = () => {
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {jobOpenings.map((job: Job) => (
-                  <Card key={job._id} className="h-full hover:shadow-card-hover border-border flex flex-col transition-all duration-300">
+                  <Card key={job._id || job.id} className="h-full hover:shadow-card-hover border-border flex flex-col transition-all duration-300">
                     <CardHeader>
                       <div className="flex justify-between items-start mb-2">
                         <Badge variant="outline" className="bg-muted">{job.dept}</Badge>
                         <span className="text-xs text-muted-foreground">
-                          {new Date(job.postedDate).toLocaleDateString()}
+                          {job.postedDate ? new Date(job.postedDate).toLocaleDateString() : 'Recent'}
                         </span>
                       </div>
                       <CardTitle className="text-xl">{job.jobRole}</CardTitle>
@@ -268,12 +259,12 @@ const Careers = () => {
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        {job.skills.slice(0, 4).map((skill: string, idx: number) => (
+                        {job.skills?.slice(0, 4).map((skill: string, idx: number) => (
                           <Badge key={idx} variant="secondary" className="text-xs font-normal">
                             {skill}
                           </Badge>
                         ))}
-                        {job.skills.length > 4 && (
+                        {job.skills && job.skills.length > 4 && (
                           <Badge variant="secondary" className="text-xs font-normal">+{job.skills.length - 4}</Badge>
                         )}
                       </div>

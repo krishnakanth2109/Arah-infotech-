@@ -17,7 +17,7 @@ const slides = [
     description: "We combine cutting-edge AI technology with creative design to deliver digital experiences that drive growth and engagement.",
     cta: "Get Started",
     ctaLink: "/contact",
-    secondaryCta: "Learn More",
+ 
     secondaryLink: "/about",
   },
   {

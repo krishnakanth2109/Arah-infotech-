@@ -107,12 +107,7 @@ const ServicesSection = () => {
                   ))}
                 </ul>
                 
-                <Link 
-                  to={service.link}
-                  className="inline-flex items-center gap-2 text-primary font-medium hover:gap-3 transition-all"
-                >
-                  Learn More <ArrowRight className="w-4 h-4" />
-                </Link>
+          
               </div>
             </motion.div>
           ))}
