@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import "./chatbot.css";
 
 const ChatBot = () => {
@@ -32,16 +34,15 @@ const ChatBot = () => {
     setLoading(true);
 
     try {
-      const apiUrl = `${import.meta.env.VITE_API_URL}/chatbot`;
+      const apiUrl = `${import.meta.env.VITE_API_URL}/api/chatbot`;
 
       const res = await axios.post(
         apiUrl,
         { message: userMsgText },
-        { 
+        {
           // 🔹 TIMEOUT SET TO 60 SECONDS (60000ms)
-          // This gives the server enough time if it's still loading knowledge
-          timeout: 60000 
-        } 
+          timeout: 60000
+        }
       );
 
       // Add Bot Response
@@ -53,7 +54,7 @@ const ChatBot = () => {
       console.error("Chatbot Error:", error);
 
       let errorMessage = "I'm having trouble connecting right now. Please try again later.";
-      
+
       // Check if it was specifically a timeout error
       if (error.code === 'ECONNABORTED') {
         errorMessage = "The server is taking too long to respond. It might be loading the knowledge base. Please try again in a minute.";
@@ -86,13 +87,21 @@ const ChatBot = () => {
             <h4>Arah Infotech</h4>
             <span>AI Support Assistant</span>
           </div>
-          <button onClick={() => setOpen(false)}>✕</button>
+          <button className="close-btn" onClick={() => setOpen(false)}>✕</button>
         </div>
 
         <div className="ai-body">
           {messages.map((msg, index) => (
             <div key={index} className={`ai-message ${msg.sender}`}>
-              {msg.text}
+              {msg.sender === "bot" ? (
+                <div className="markdown-content">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {msg.text}
+                  </ReactMarkdown>
+                </div>
+              ) : (
+                msg.text
+              )}
             </div>
           ))}
 

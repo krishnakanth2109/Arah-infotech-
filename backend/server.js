@@ -10,7 +10,6 @@ import { loadKnowledge, getChatResponse } from './chatbotService.js';
 import adminRoutes from './routes/adminRoutes.js';
 import careerRoutes from './routes/careerRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
-import chatRoutes from './routes/chatRoutes.js';
 import applicationRoutes from './routes/applicationRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 
@@ -32,25 +31,30 @@ const allowedOrigins = [
   "http://localhost:8080"  // Optional local port
 ];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Allow requests without origin (Postman, curl, mobile apps)
-      if (!origin) return callback(null, true);
+app.use(cors()); // Allow all origins for development
+// app.use(
+//   cors({
+//     origin: function (origin, callback) {
+//       // Allow requests without origin (Postman, curl, mobile apps)
+//       if (!origin) return callback(null, true);
 
-      if (!allowedOrigins.includes(origin)) {
-        return callback(
-          new Error("CORS policy does not allow access from this Origin"),
-          false
-        );
-      }
+//       const allowedOrigins = [
+//         "https://arah-infotech-technology.netlify.app",
+//         "http://localhost:5173",
+//         "http://localhost:8080",
+//         "http://localhost:3000"
+//       ];
 
-      return callback(null, true);
-    },
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
-  })
-);
+//       if (!allowedOrigins.includes(origin)) {
+//         return callback(null, true); // Allow anyway for now
+//       }
+
+//       return callback(null, true);
+//     },
+//     methods: ["GET", "POST", "PUT", "DELETE"],
+//     credentials: true,
+//   })
+// );
 
 // ============================
 // 🧩 MIDDLEWARE
@@ -100,7 +104,6 @@ app.post('/api/chatbot', async (req, res) => {
 app.use('/api/admin', adminRoutes);
 app.use('/api/careers', careerRoutes);
 app.use('/api/contact', contactRoutes);
-app.use('/api/chat', chatRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/products', productRoutes);
 

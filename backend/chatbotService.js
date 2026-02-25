@@ -1,52 +1,24 @@
 import puppeteer from "puppeteer";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 import dotenv from "dotenv";
 
 dotenv.config();
 
 let websiteKnowledge = "";
-let workingModel = null;
+let isReady = false;
 
 /* =====================================================
-   1️⃣ FIND WORKING GEMINI MODEL
+   1️⃣ CHECK GROQ API CONFIGURATION
 ===================================================== */
-async function findWorkingModel() {
-  const apiKey = process.env.GOOGLE_API_KEY;
+function checkGroqConfig() {
+  const apiKey = process.env.GROQ_API_KEY;
 
   if (!apiKey) {
-    console.error("❌ GOOGLE_API_KEY missing in .env");
-    return null;
+    console.error("❌ GROQ_API_KEY missing in .env");
+    console.log("ℹ️ Please add GROQ_API_KEY to your backend/.env file");
+    return false;
   }
-
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
-    );
-
-    const data = await response.json();
-
-    if (!response.ok || !data.models?.length) {
-      return null;
-    }
-
-    const preferredModels = [
-      "gemini-2.5-flash",
-      "gemini-2.0-pro",
-      "gemini-pro"
-    ];
-
-    for (const pref of preferredModels) {
-      const found = data.models.find(m => m.name.includes(pref));
-      if (found) {
-        return found.name.replace("models/", "");
-      }
-    }
-
-    return data.models[0].name.replace("models/", "");
-
-  } catch {
-    return null;
-  }
+  return true;
 }
 
 /* =====================================================
@@ -99,7 +71,8 @@ async function scrapeAllPages(urls) {
 
     return combinedText;
 
-  } catch {
+  } catch (err) {
+    console.error("Puppeteer Launch Error:", err.message);
     return "";
 
   } finally {
@@ -112,10 +85,8 @@ async function scrapeAllPages(urls) {
 ===================================================== */
 export async function loadKnowledge() {
 
-  workingModel = await findWorkingModel();
-
-  if (!workingModel) {
-    console.error("❌ AI disabled.");
+  if (!checkGroqConfig()) {
+    console.error("❌ AI disabled: Missing Groq API Key.");
     return;
   }
 
@@ -129,7 +100,7 @@ export async function loadKnowledge() {
     "https://arahinfotech.net/services/digital-marketing",
     "https://arahinfotech.net/industries",
     "https://arahinfotech.net/careers",
-    "https://arahinfotech.net/contact" 
+    "https://arahinfotech.net/contact"
   ];
 
   const combinedText = await scrapeAllPages(urls);
@@ -137,9 +108,11 @@ export async function loadKnowledge() {
   websiteKnowledge = combinedText;
 
   if (websiteKnowledge.length > 0) {
-    console.log("✅ Arah Infotech AI Knowledge Ready");
+    isReady = true;
+    console.log("✅ Arah Infotech AI Knowledge Ready (Using Groq API)");
   } else {
-    console.log("⚠ No content scraped.");
+    console.log("⚠ No content scraped. AI will use generic knowledge.");
+    // Fallback? Or just empty knowledge.
   }
 }
 
@@ -148,38 +121,47 @@ export async function loadKnowledge() {
 ===================================================== */
 export async function getChatResponse(userMessage) {
 
-  if (!workingModel) {
-    return "AI chatbot is unavailable.";
+  if (!checkGroqConfig()) {
+    return "AI chatbot is unavailable due to missing configuration.";
   }
 
-  if (!websiteKnowledge) {
-    return "Knowledge base is loading. Please wait.";
+  if (!isReady && !websiteKnowledge) {
+    return "Knowledge base is still loading. Please try again in 30 seconds.";
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-    const model = genAI.getGenerativeModel({
-      model: workingModel,
-      systemInstruction: `
-      You are the official AI Assistant of Arah Infotech.
+    // Truncate if too huge, though LLaMA 70B has large context
+    const contextStr = websiteKnowledge ? websiteKnowledge.substring(0, 25000) : "No website content available.";
 
-      RULES:
-      1. Answer ONLY using provided website knowledge.
-      2. If answer not found say:
-         "I can only assist with information related to Arah Infotech."
-      3. Keep response professional and concise.
-      `
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: `You are the official AI Assistant of Arah Infotech.
+
+RULES:
+1. Answer ONLY using the provided website knowledge below.
+2. If the user asks for something not in the knowledge, say exactly:
+   "I can only assist with information related to Arah Infotech."
+3. VERY IMPORTANT: Keep your response EXTREMELY short and concise. Do NOT give long explanations. Limit your answer to 3-4 sentences maximum.
+4. Format with emojis and bullet points for readability, but keep the content brief.
+
+WEBSITE KNOWLEDGE:
+${contextStr}`
+        },
+        {
+          role: "user",
+          content: userMessage
+        }
+      ],
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.5,
+      max_tokens: 1024,
     });
 
-    const result = await model.generateContent(
-      `${websiteKnowledge.substring(0, 12000)}
-
-User Question:
-${userMessage}`
-    );
-
-    return result.response.text();
+    return chatCompletion.choices[0]?.message?.content || "I'm sorry, I couldn't generate an answer.";
 
   } catch (error) {
     console.error("❌ AI Error:", error.message);
