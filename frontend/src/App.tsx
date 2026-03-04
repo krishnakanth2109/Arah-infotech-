@@ -21,12 +21,15 @@ import NotFound from "./pages/NotFound";
 
 // --- Admin Pages ---
 import AdminLogin from "./pages/admin/Login";
-import AdminLayout from "./components/admin/AdminLayout"; // 🔹 Import the layout
+import AdminLayout from "./components/admin/AdminLayout"; 
 import DashboardHome from "./pages/admin/DashboardHome"; 
 import Messages from "./pages/admin/Messages";
 import CareersAdmin from "./pages/admin/CareersAdmin"; 
 import CareersApplications from "./pages/admin/CareersApplications"; 
 import ProductsAdmin from "./pages/admin/ProductsAdmin";
+
+// 🔹 NEW: Import the Sidebar Manager component
+import SidebarManager from "./pages/admin/SidebarManager";
 
 import ChatBot from "./components/ChatBot";
 
@@ -50,7 +53,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-// 🔹 New Component: Conditionally render ChatBot
+// Conditionally render ChatBot
 const ChatBotWrapper = () => {
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith("/admin");
@@ -90,7 +93,7 @@ const App = () => {
                 path="/admin" 
                 element={
                   <ProtectedRoute>
-                    <AdminLayout /> {/* 🔹 Changed from <Outlet /> to <AdminLayout /> */}
+                    <AdminLayout />
                   </ProtectedRoute>
                 }
               >
@@ -100,6 +103,9 @@ const App = () => {
                 <Route path="careers" element={<CareersAdmin />} />
                 <Route path="applications" element={<CareersApplications />} />
                 <Route path="products" element={<ProductsAdmin />} />
+                
+                {/* 🔹 NEW: Sidebar Manager Route */}
+                <Route path="sidebar-manager" element={<SidebarManager />} />
               </Route>
 
               {/* --- 404 --- */}

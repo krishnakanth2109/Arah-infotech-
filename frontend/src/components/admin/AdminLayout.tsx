@@ -10,17 +10,44 @@ import {
   ChevronsRight,
   FileText, 
   Receipt,  
-  Package   
+  Package,
+  Link as LinkIcon, // Generic icon for dynamic links
+  Settings
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+
+interface DynamicLink {
+  _id: string;
+  name: string;
+  link: string;
+}
 
 const AdminLayout = () => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false); 
   const [isCollapsed, setIsCollapsed] = useState(false); 
+  const [dynamicLinks, setDynamicLinks] = useState<DynamicLink[]>([]);
+
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+  useEffect(() => {
+    fetchDynamicLinks();
+  }, []);
+
+  const fetchDynamicLinks = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/sidebar`);
+      if (res.ok) {
+        const data = await res.json();
+        setDynamicLinks(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch sidebar links:", error);
+    }
+  };
 
   const handleLogout = () => {
     sessionStorage.removeItem('adminToken');
@@ -39,16 +66,15 @@ const AdminLayout = () => {
         )}
       </div>
       
-      <nav className="flex-1 px-3 space-y-2">
+      <nav className="flex-1 px-3 space-y-2 overflow-y-auto">
+        {/* Core Links */}
         <NavLink 
           to="/admin/dashboard" 
           end
           className={({ isActive }) => 
-            cn(
-              "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group relative",
+            cn("flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group relative",
               isActive ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted',
-              collapsed && "justify-center"
-            )
+              collapsed && "justify-center")
           }
           onClick={() => setIsOpen(false)}
         >
@@ -56,15 +82,12 @@ const AdminLayout = () => {
           {!collapsed && <span className="whitespace-nowrap">Dashboard</span>}
         </NavLink>
 
-      
         <NavLink 
           to="/admin/careers" 
           className={({ isActive }) => 
-            cn(
-              "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group relative",
+            cn("flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group relative",
               isActive ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted',
-              collapsed && "justify-center"
-            )
+              collapsed && "justify-center")
           }
           onClick={() => setIsOpen(false)}
         >
@@ -72,15 +95,12 @@ const AdminLayout = () => {
           {!collapsed && <span className="whitespace-nowrap">Careers</span>}
         </NavLink>
 
-        {/* 🔹 FIXED PATH HERE: Match App.tsx path="applications" */}
         <NavLink 
           to="/admin/applications" 
           className={({ isActive }) => 
-            cn(
-              "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group relative",
+            cn("flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group relative",
               isActive ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted',
-              collapsed && "justify-center"
-            )
+              collapsed && "justify-center")
           }
           onClick={() => setIsOpen(false)}
         >
@@ -91,25 +111,22 @@ const AdminLayout = () => {
         <NavLink 
           to="/admin/products" 
           className={({ isActive }) => 
-            cn(
-              "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group relative",
+            cn("flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group relative",
               isActive ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted',
-              collapsed && "justify-center"
-            )
+              collapsed && "justify-center")
           }
           onClick={() => setIsOpen(false)}
         >
           <Package className="w-5 h-5 flex-shrink-0" />
           {!collapsed && <span className="whitespace-nowrap">Products</span>}
         </NavLink>
-  <NavLink 
+
+        <NavLink 
           to="/admin/messages" 
           className={({ isActive }) => 
-            cn(
-              "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group relative",
+            cn("flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group relative",
               isActive ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted',
-              collapsed && "justify-center"
-            )
+              collapsed && "justify-center")
           }
           onClick={() => setIsOpen(false)}
         >
@@ -119,6 +136,7 @@ const AdminLayout = () => {
 
         <div className="my-2 border-t border-border/50 mx-2" />
 
+        {/* Static External Links */}
         <a href="https://Invoicepdf.netlify.app" target="_blank" rel="noopener noreferrer" className={cn("flex items-center gap-3 px-3 py-3 rounded-lg text-muted-foreground hover:bg-muted", collapsed && "justify-center")}>
           <Receipt className="w-5 h-5 flex-shrink-0 text-orange-500" />
           {!collapsed && <span className="whitespace-nowrap">Invoice Generator</span>}
@@ -128,9 +146,42 @@ const AdminLayout = () => {
           <FileText className="w-5 h-5 flex-shrink-0 text-blue-500" />
           {!collapsed && <span className="whitespace-nowrap">Offer Letter Gen</span>}
         </a>
+
+        {/* Custom Dynamic Links Generated from Admin Panel */}
+        {dynamicLinks.length > 0 && <div className="my-2 border-t border-border/50 mx-2" />}
+        
+        {dynamicLinks.map((item) => (
+          <a 
+            key={item._id} 
+            href={item.link} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className={cn("flex items-center gap-3 px-3 py-3 rounded-lg text-muted-foreground hover:bg-muted", collapsed && "justify-center")}
+          >
+            <LinkIcon className="w-5 h-5 flex-shrink-0 text-purple-500" />
+            {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
+          </a>
+        ))}
+
+        <div className="my-2 border-t border-border/50 mx-2" />
+
+        {/* Route to manage custom sidebar links */}
+        <NavLink 
+          to="/admin/sidebar-manager" 
+          className={({ isActive }) => 
+            cn("flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group relative",
+              isActive ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted',
+              collapsed && "justify-center")
+          }
+          onClick={() => setIsOpen(false)}
+        >
+          <Settings className="w-5 h-5 flex-shrink-0 text-gray-500" />
+          {!collapsed && <span className="whitespace-nowrap">Manage Sidebar</span>}
+        </NavLink>
+
       </nav>
 
-      <div className="px-3 mt-auto">
+      <div className="px-3 mt-auto pt-4">
         <Button 
           variant="outline" 
           className={cn("w-full text-red-500 hover:bg-red-50", collapsed ? "justify-center px-0" : "justify-start")}
@@ -163,7 +214,7 @@ const AdminLayout = () => {
 
       <main className="flex-1 p-4 md:p-8 overflow-y-auto bg-muted/10 h-screen">
         <div className="mx-auto max-w-7xl h-full">
-          <Outlet /> {/* 🔹 Child routes (Dashboard, etc.) render here */}
+          <Outlet /> 
         </div>
       </main>
     </div>

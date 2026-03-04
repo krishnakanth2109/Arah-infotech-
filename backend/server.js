@@ -12,7 +12,7 @@ import careerRoutes from './routes/careerRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
 import applicationRoutes from './routes/applicationRoutes.js';
 import productRoutes from './routes/productRoutes.js';
-
+import sidebarRoutes from './routes/sidebarRoutes.js';
 // ============================
 // ⚙️ CONFIG
 // ============================
@@ -106,7 +106,7 @@ app.use('/api/careers', careerRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/products', productRoutes);
-
+app.use('/api/sidebar', sidebarRoutes);
 // ============================
 // 🏠 BASE ROUTE
 // ============================
